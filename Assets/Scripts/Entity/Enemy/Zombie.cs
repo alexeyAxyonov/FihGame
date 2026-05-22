@@ -20,7 +20,12 @@ public class Zombie : Entity
 
     protected override void Die()
     {
-        isDead = true;
+        base.Die();
+
+        ZombieSpawnController spawner = FindAnyObjectByType<ZombieSpawnController>();
+        if (spawner != null)
+            spawner.OnEnemyDied(this);
+
         RagdollController ragdollController = GetComponent<RagdollController>();
         if (ragdollController != null)
         {

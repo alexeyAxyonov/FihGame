@@ -2,7 +2,7 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IDataPersistence
 {
     public float characterSpeed = 30f;
 
@@ -34,6 +34,23 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 _move;
     private float _verticalVelocity = 0f;
+
+    private int timesShot;
+
+    public void LoadData(GameData data)
+    {
+        timesShot = data.timesShot;
+        if (data.hasSavedPosition)
+        {
+            transform.position = data.playerPosition;
+        }
+    }
+    public void SaveData(ref GameData data)
+    {
+        data.timesShot = timesShot;
+        data.playerPosition = transform.position;
+        data.hasSavedPosition = true;
+    }
 
     public void OnMove(InputValue val)
     {
@@ -78,6 +95,7 @@ public class PlayerController : MonoBehaviour
         if (val.isPressed)
         {
             weaponHolder.Attack();
+            timesShot++;
         }
     }
     public void OnSwitchWeaponNext(InputValue val)
@@ -100,6 +118,7 @@ public class PlayerController : MonoBehaviour
     public void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
+        timesShot = 0;
     }
 
     public void Update()

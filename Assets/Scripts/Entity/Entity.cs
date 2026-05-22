@@ -16,7 +16,10 @@ public abstract class Entity : MonoBehaviour, IDamageable
         {
             if (value <= 0)
             {
-                Die();
+                if (!isDead)
+                {
+                    Die();
+                }
             }
             else
             {
@@ -52,5 +55,8 @@ public abstract class Entity : MonoBehaviour, IDamageable
         }
     }
 
-    protected abstract void Die();
+    protected virtual void Die()
+    {
+        isDead = true;
+    }
 }

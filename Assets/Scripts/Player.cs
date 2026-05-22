@@ -1,23 +1,50 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Player : Entity
+public class Player : Entity, IDataPersistence
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 
     // Update is called once per frame
 
-    public GameObject bloodyScreen;
+    //public TextMeshProUGUI playerHealthUI;
+    //public GameObject gameOverUI;
+
+    public GameObject bloodyScreen; //aint workin'
+    //public GameObject fadeOutScreen;
+
+    private int deathCount;
+    private void Awake()
+    {
+        deathCount = 0;
+    }
     private void Start()
     {
         Health = maxHealth;
+        UIManager.Instance.playerHealthUI.text = $"HP: {Health}/{maxHealth}";
+        Debug.Log($"Health: {Health}, maxHealth: {maxHealth}, UI text: {UIManager.Instance.playerHealthUI.text}");
     }
-
+    public void LoadData(GameData data)
+    {
+        deathCount = data.deathCount;
+    }
+    public void SaveData(ref GameData data)
+    {
+        data.deathCount = deathCount;
+    }
     public override void TakeDamage(int amount, Vector3 hitPoint, Vector3 hitNormal, float distance)
     {
         base.TakeDamage(amount, hitPoint, hitNormal, distance);
-        StartCoroutine(BloodyScreenEffect());
+        UIManager.Instance.playerHealthUI.text = $"HP: {Health}/{maxHealth}";
+        //StartCoroutine(BloodyScreenEffect()); bloody screen is buggy due to Unity shenanigans
+    }
+
+    public override void Heal(int amount)
+    {
+        base.Heal(amount);
+        UIManager.Instance.playerHealthUI.text = $"HP: {Health}/{maxHealth}";
     }
 
     private IEnumerator BloodyScreenEffect()
@@ -62,6 +89,18 @@ public class Player : Entity
 
     protected override void Die()
     {
-        Debug.Log("player dead!");
+        base.Die();
+        //GetComponent<MouseMovement>().enabled = false;
+        GetComponent<PlayerController>().enabled = false;
+        UIManager.Instance.playerHealthUI.gameObject.SetActive(false);
+        UIManager.Instance.fadeOutScreen.SetActive(true);
+        
+        
+        StartCoroutine(ShowGameOverUI());
+    }
+    private IEnumerator ShowGameOverUI()
+    {
+        yield return new WaitForSeconds(1f);
+        UIManager.Instance.gameOverUI.SetActive(true);
     }
 }
