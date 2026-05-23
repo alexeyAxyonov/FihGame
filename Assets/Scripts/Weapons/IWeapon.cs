@@ -7,6 +7,7 @@ interface IWeapon
     public void Attack();
     public void Equip();
     public void Unequip();
+    public void Parry();
     void Initialize(Camera cam);
 
 }

@@ -114,6 +114,13 @@ public class PlayerController : MonoBehaviour, IDataPersistence
         int slot = val.Get<int>() - 1;
         weaponHolder.EquipWeapon(slot);
     }
+    public void OnParry(InputValue val)
+    {
+        if (val.isPressed)
+        {
+            weaponHolder.TryParry();
+        }
+    }
 
     public void Start()
     {

@@ -12,12 +12,14 @@ public abstract class WeaponBase : MonoBehaviour, IWeapon
 
     [Header("Shooting")]
     public bool isShooting, readyToShoot;
+    public virtual bool CanParry { get; set; }
     public float shootingDelay = 0.7f;
 
     public enum ShootingMode
     {
         Single,
-        Burst
+        Burst,
+        Parry
     }
     public ShootingMode currentShootingMode;
     public abstract ShootingMode[] AvailableModes { get; }
@@ -26,6 +28,10 @@ public abstract class WeaponBase : MonoBehaviour, IWeapon
     {
         readyToShoot = true;
         currentShootingMode = ShootingMode.Single;
+    }
+    public virtual void Parry()
+    {
+
     }
     public virtual void Initialize(Camera cam)
     {

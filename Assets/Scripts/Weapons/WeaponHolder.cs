@@ -32,7 +32,10 @@ public class WeaponHolder : MonoBehaviour
     {
         currentWeapon?.Attack();
     }
-
+    public void TryParry()
+    {
+        currentWeapon?.Parry();
+    }
     public void EquipWeapon(int index)
     {
         if (index < 0 || index >= weapons.Count) return;

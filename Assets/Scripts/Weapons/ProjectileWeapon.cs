@@ -46,4 +46,9 @@ public abstract class ProjectileWeapon : WeaponBase
         }
         Destroy(bullet);
     }
+    public override void Equip()
+    {
+        base.Equip();
+        readyToShoot = true;
+    }
 }

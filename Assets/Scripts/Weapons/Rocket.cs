@@ -13,19 +13,10 @@ public class Rocket : Projectile
     public float reverseSpeedMultiplier = 5f;
     public bool friendlyFire = false; // TODO: take knockback but not damage on explode when flag == false
 
-    private Rigidbody rb;
     private GameObject player;
     private Coroutine destructionCoroutine;
 
     [SerializeField] ProjectileWeapon weapon; // kinda unneeded now, but whatever
-
-    void Awake()
-    {
-        rb = GetComponent<Rigidbody>();
-
-        if (rb == null)
-            Debug.LogError("Rocket has no Rigidbody!", this);
-    }
 
     void Start()
     {
@@ -33,15 +24,25 @@ public class Rocket : Projectile
         if (player == null)
             Debug.LogError("No GameObject with tag 'Player' found!", this);
     }
-/*
-    void FixedUpdate()
+    /*
+        void FixedUpdate()
+        {
+            // Visual: make the rocket face its velocity direction
+            if (rb.linearVelocity.magnitude > 0.1f)
+                transform.rotation = Quaternion.LookRotation(rb.linearVelocity);
+        }
+    */
+    public override void Reflect(Vector3 newDirection, float speedMultiplier = 1.5f)
     {
-        // Visual: make the rocket face its velocity direction
-        if (rb.linearVelocity.magnitude > 0.1f)
-            transform.rotation = Quaternion.LookRotation(rb.linearVelocity);
-    }
-*/
+        base.Reflect(newDirection, speedMultiplier);
 
+        if (weapon != null)
+        {
+            weapon.bulletPrefabLifeTime += 10f;
+        }
+
+        Debug.Log($"[Rocket] Reflected! New direction: {newDirection}");
+    }
     public override void OnCollisionEnter(Collision collision)
     {
         Debug.Log($"[Rocket] Hit: {collision.gameObject.name}, Tag: {collision.gameObject.tag}, Layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
@@ -120,7 +121,7 @@ public class Rocket : Projectile
             IDamageable damageable = hit.GetComponent<IDamageable>();
             if (damageable != null)
             {
-                if (hit.CompareTag("Player"))
+                if (hit.CompareTag("Player") && !friendlyFire)
                 {
                     Debug.Log("Rocket hit Player");
                 }
