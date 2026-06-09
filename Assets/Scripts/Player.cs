@@ -16,8 +16,12 @@ public class Player : Entity, IDataPersistence
     //public GameObject fadeOutScreen;
 
     private int deathCount;
-    private void Awake()
+    // BUG FIX: Entity.Awake is now virtual and initializes currentHealth. A plain
+    // "private void Awake()" here HIDES it (CS0114) and skips that init, so this
+    // must override and chain to base.Awake().
+    protected override void Awake()
     {
+        base.Awake();
         deathCount = 0;
     }
     private void Start()

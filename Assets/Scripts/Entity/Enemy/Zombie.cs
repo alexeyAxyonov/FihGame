@@ -1,5 +1,4 @@
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -22,6 +21,14 @@ public class Zombie : Entity
     {
         base.Die();
 
+        // BUG FIX: NavMeshAgent was never stopped on death, causing it to keep
+        // pathfinding and fighting the ragdoll physics simulation.
+        if (navAgent != null)
+        {
+            navAgent.isStopped = true;
+            navAgent.enabled = false;
+        }
+
         ZombieSpawnController spawner = FindAnyObjectByType<ZombieSpawnController>();
         if (spawner != null)
             spawner.OnEnemyDied(this);
@@ -38,14 +45,16 @@ public class Zombie : Entity
             healZone.gameObject.SetActive(true);
             Debug.Log("HealZone set active");
         }
-            
+
         destructionCoroutine = StartCoroutine(DestroyAfterDelay(5f));
     }
+
     private IEnumerator DestroyAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
         Destroy(gameObject);
     }
+
     public void DestroyImmediately()
     {
         if (destructionCoroutine != null)
@@ -71,12 +80,13 @@ public class Zombie : Entity
             Debug.LogError("Player does not have an IDamageable component!");
         }
     }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, 2.5f); // Attack radius //
+        Gizmos.DrawWireSphere(transform.position, 2.5f); // Attack radius
 
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, 40f); // Detection radius //
+        Gizmos.DrawWireSphere(transform.position, 40f); // Detection radius
     }
 }

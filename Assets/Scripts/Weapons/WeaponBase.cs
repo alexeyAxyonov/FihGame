@@ -1,6 +1,5 @@
-using TMPro;
-using Unity.Services.Analytics;
 using UnityEngine;
+// BUG FIX: removed unused "using TMPro;" and "using Unity.Services.Analytics;"
 
 public abstract class WeaponBase : MonoBehaviour, IWeapon
 {
@@ -21,6 +20,7 @@ public abstract class WeaponBase : MonoBehaviour, IWeapon
         Burst,
         Parry
     }
+
     public ShootingMode currentShootingMode;
     public abstract ShootingMode[] AvailableModes { get; }
 
@@ -29,10 +29,9 @@ public abstract class WeaponBase : MonoBehaviour, IWeapon
         readyToShoot = true;
         currentShootingMode = ShootingMode.Single;
     }
-    public virtual void Parry()
-    {
 
-    }
+    public virtual void Parry() { }
+
     public virtual void Initialize(Camera cam)
     {
         playerCamera = cam;

@@ -2,15 +2,15 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerController : MonoBehaviour, IDataPersistence
+public class PlayerController : MonoBehaviour, IDataPersistence, IKnockbackable
 {
     public float characterSpeed = 30f;
 
-    public float dashSpeed = 60f;  // dash feels a bit off due to gravity interactions
+    public float dashSpeed = 60f;
     public float dashDuration = 0.35f;
     public float dashCooldown = 0.07f;
     private bool _isDashing = false;
-    private float _dashTimer = 0f; 
+    private float _dashTimer = 0f;
     private float _dashCooldownTimer = 0f;
     private float dashStaminaCost = 1f;
     private Vector3 _dashDirection;
@@ -19,7 +19,7 @@ public class PlayerController : MonoBehaviour, IDataPersistence
     public float jumpHeight = 5f;
     public float stamina = 3f;
     public bool jumpPressed = false;
-    public float currentStamina = 3f; // Для двойных прыжков и рывков
+    public float currentStamina = 3f;
 
     public Transform groundCheck;
     public float groundDistance = 0.4f;
@@ -35,6 +35,10 @@ public class PlayerController : MonoBehaviour, IDataPersistence
     private Vector2 _move;
     private float _verticalVelocity = 0f;
 
+    // Knockback (explosions etc.): a decaying horizontal velocity applied on top of movement.
+    private Vector3 _externalVelocity = Vector3.zero;
+    [SerializeField] private float knockbackDecay = 8f;
+
     private int timesShot;
 
     public void LoadData(GameData data)
@@ -45,6 +49,7 @@ public class PlayerController : MonoBehaviour, IDataPersistence
             transform.position = data.playerPosition;
         }
     }
+
     public void SaveData(ref GameData data)
     {
         data.timesShot = timesShot;
@@ -56,6 +61,7 @@ public class PlayerController : MonoBehaviour, IDataPersistence
     {
         _move = val.Get<Vector2>();
     }
+
     public void OnJump(InputValue val)
     {
         if (val.isPressed)
@@ -98,6 +104,7 @@ public class PlayerController : MonoBehaviour, IDataPersistence
             timesShot++;
         }
     }
+
     public void OnSwitchWeaponNext(InputValue val)
     {
         if (val.isPressed)
@@ -109,11 +116,32 @@ public class PlayerController : MonoBehaviour, IDataPersistence
         if (val.isPressed)
             weaponHolder.SwitchToPrevious();
     }
-    public void OnWeaponSlot(InputValue val)
+
+    // Number keys 1..9 select the weapon in that slot directly (1 → slot 0, 2 → slot 1, …).
+    // Polled from the keyboard rather than driven by an input action so each key maps straight
+    // to a slot index and it scales to any number of weapons. Out-of-range slots are ignored
+    // by WeaponHolder.EquipWeapon.
+    private static readonly Key[] _weaponSlotKeys =
     {
-        int slot = val.Get<int>() - 1;
-        weaponHolder.EquipWeapon(slot);
+        Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5,
+        Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9
+    };
+
+    private void HandleWeaponSelection()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null) return;
+
+        for (int i = 0; i < _weaponSlotKeys.Length; i++)
+        {
+            if (keyboard[_weaponSlotKeys[i]].wasPressedThisFrame)
+            {
+                weaponHolder.EquipWeapon(i);
+                break;
+            }
+        }
     }
+
     public void OnParry(InputValue val)
     {
         if (val.isPressed)
@@ -122,14 +150,29 @@ public class PlayerController : MonoBehaviour, IDataPersistence
         }
     }
 
+    // Called by explosions (Rocket) etc. Horizontal knockback decays via _externalVelocity;
+    // upward knockback feeds the gravity/jump system so blasts can pop the player up.
+    public void ApplyKnockback(Vector3 velocity)
+    {
+        _externalVelocity.x += velocity.x;
+        _externalVelocity.z += velocity.z;
+        if (velocity.y > 0f)
+            _verticalVelocity = Mathf.Max(_verticalVelocity, velocity.y);
+    }
+
     public void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        timesShot = 0;
+        // BUG FIX: "timesShot = 0" was here, which wiped the value loaded by
+        // LoadData() since DataPersistenceManager calls LoadGame() in its own Start(),
+        // and Unity's Start() execution order is not guaranteed across MonoBehaviours.
+        // The field defaults to 0 anyway, and SaveData/LoadData handle persistence.
     }
 
     public void Update()
     {
+        HandleWeaponSelection();
+
         if (!_isDashing)
         {
             _verticalVelocity += gravity * Time.deltaTime;
@@ -172,9 +215,18 @@ public class PlayerController : MonoBehaviour, IDataPersistence
             _characterController.Move(horizontalMovement + verticalMovement);
         }
 
+        // Apply decaying external knockback (explosions, etc.) on top of normal movement.
+        if (_externalVelocity.sqrMagnitude > 0.0001f)
+        {
+            _characterController.Move(_externalVelocity * Time.deltaTime);
+            _externalVelocity = Vector3.Lerp(_externalVelocity, Vector3.zero, Mathf.Clamp01(knockbackDecay * Time.deltaTime));
+        }
+
         if (!_isDashing && currentStamina < stamina)
         {
-            currentStamina = ((currentStamina + 0.33f * Time.deltaTime) < stamina)? currentStamina + 0.33f * Time.deltaTime : stamina;
+            currentStamina = ((currentStamina + 0.33f * Time.deltaTime) < stamina)
+                ? currentStamina + 0.33f * Time.deltaTime
+                : stamina;
         }
 
         if (_dashCooldownTimer > 0f)
@@ -189,6 +241,7 @@ public class PlayerController : MonoBehaviour, IDataPersistence
         forward.y = 0;
         return forward.normalized;
     }
+
     private Vector3 GetRight()
     {
         Vector3 right = _camera.transform.right;

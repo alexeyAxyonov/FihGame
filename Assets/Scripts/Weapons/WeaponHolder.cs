@@ -40,6 +40,10 @@ public class WeaponHolder : MonoBehaviour
     {
         if (index < 0 || index >= weapons.Count) return;
 
+        // Already holding this weapon — don't re-equip (avoids a needless
+        // Unequip/Equip flicker and resetting the weapon's cooldown/state).
+        if (index == currentIndex && currentWeapon != null) return;
+
         currentWeapon?.Unequip();
 
         currentIndex = index;
